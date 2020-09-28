@@ -1,0 +1,3 @@
+Read in the SimEvent/CalibEvent/RecEvent of one event, of the old processing chain(without elecsim)
+1,  source genFile.sh to generate data sample
+2,  python run.py to run the CorAnaAlg algorithm which reads in the event

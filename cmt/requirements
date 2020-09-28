@@ -1,0 +1,22 @@
+package FhtAnalysis
+
+use SniperKernel v*
+use BufferMemMgr v* CommonSvc
+use ROOT v* Externals
+use RootWriter v* SniperSvc
+use EvtNavigator v* DataModel
+use Geometry v* Detector
+use Identifier v* Detector
+
+use SimEventV2 v* DataModel
+use ElecEvent v* DataModel
+use CalibEvent v* DataModel
+use RecEvent v* DataModel
+
+use InputReviser v* Utilities
+
+
+library FhtAnalysis *.cc
+apply_pattern linker_library library=FhtAnalysis
+apply_pattern install_python_modules
+

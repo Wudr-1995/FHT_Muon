@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/offline/!svn/ver/3083/trunk/Examples/CorAnalysis/share
+END
+genFile.sh
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/offline/!svn/ver/3083/trunk/Examples/CorAnalysis/share/genFile.sh
+END
+run.py
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/offline/!svn/ver/3049/trunk/Examples/CorAnalysis/share/run.py
+END
+README
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/offline/!svn/ver/3045/trunk/Examples/CorAnalysis/share/README
+END
