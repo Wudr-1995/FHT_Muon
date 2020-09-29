@@ -232,7 +232,7 @@ double* FhtAnalysis::PredictFht(PmtProp& pos) {
 	pars.set("LSRefraction", m_nLS);
 	pars.set("MuonSpeed", m_vMuon);
 	pars.set("LightSpeed", m_cLight);
-	// pars.set("WaterRefraction", 1.34);
+	pars.set("WaterRefraction", 1.34);
 	double* tmp;
 	double* out;
 	for (unsigned int i = 0; i < m_start.size(); i ++) {
