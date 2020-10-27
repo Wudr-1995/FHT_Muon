@@ -75,6 +75,8 @@ bool FhtAnalysis::initialize() {
 
 bool FhtAnalysis::execute() {
 	LogDebug << "executing: " << m_iEvt ++ << std::endl;
+	// if (m_iEvt != 2)
+	// 	return true;
 	JM::SimEvent* simevent = 0;
 	JM::CalibEvent* calibevent = 0;
 
@@ -126,11 +128,15 @@ bool FhtAnalysis::execute() {
 		tmp.SetXYZ(strk->getInitX(), strk->getInitY(), strk->getInitZ());
 		TVector3 dir;
 		dir.SetXYZ(strk->getInitPx(), strk->getInitPy(), strk->getInitPz());
+	// lightdir.SetMag(1.);
 		tmp = GetInciPos(tmp, dir, m_LSRadius);
-		TVector3 WPos = GetInciPos(tmp, dir, m_WaterRadius - 1800);
+		short fstpmt = FindFirstPMT(tmp);
+		FourDCoor inci = GetInciPos(tmp, dir, m_ptab[fstpmt].pos, m_LSRadius, m_ptab[fstpmt].fht);
+		// TVector3 WPos = GetInciPos(tmp, dir, m_LSRadius);
+		TVector3 WPos = inci.P;
 		m_pmtstart.push_back(WPos);
 		dir.SetMag(1.);
-		dir.SetMag(2 * (TVector3(0, 0, 0) - WPos) * dir);
+		dir.SetMag(2 * (- WPos) * dir);
 		m_pmtend.push_back(WPos + dir);
 		sx = tmp.X();
 		sy = tmp.Y();
@@ -141,8 +147,8 @@ bool FhtAnalysis::execute() {
 		LogDebug << "Tracks: " << i 
 			<< ", start position: (" << tmp.X() << ", " << tmp.Y() << ", " << tmp.Z() << ")" << std::endl;
 		m_start.push_back(tmp);
-		short fstpmt = FindFirstPMT(tmp);
-		m_fpmtht.push_back(m_ptab[fstpmt].fht);
+		// short fstpmt = FindFirstPMT(tmp);
+		m_fpmtht.push_back(inci.T);// - (m_ptab[fstpmt].pos - WPos).Mag() * 1.34 / m_cLight);
 		m_diff_fpmtstart = (tmp - m_ptab[fstpmt].pos).Mag();
 
 		dir.SetMag(1.);
@@ -151,7 +157,7 @@ bool FhtAnalysis::execute() {
 		m_dir.push_back(dir);
 		dir.SetMag(2 * (TVector3(0, 0, 0) - tmp) * dir);
 		LogDebug << "Distance from track to center: "
-			<< (TVector3(0, 0, 0) - (tmp + TVector3(dir.X() / 2, dir.Y() / 2, dir.Z() / 2))).Mag() << std::endl;
+			<< (- (tmp + TVector3(dir.X() / 2, dir.Y() / 2, dir.Z() / 2))).Mag() << std::endl;
 		tmp = tmp + dir;
 		tmp.SetMag(m_LSRadius);
 		ex = tmp.X();
@@ -178,7 +184,7 @@ bool FhtAnalysis::execute() {
 			m_expectT = tmp[0];
 			m_ti = tmp[1];
 			m_dtc = tmp[2];
-			m_ci = tmp[3];
+			m_ci = m_ptab[i].pos.Theta();
 			m_dte = tmp[3];
 			m_pe = m_ptab[i].q;
 			m_dis = GetDisPMT2Trk(m_ptab[i]);
@@ -358,10 +364,10 @@ bool FhtAnalysis::finalize() {
 
 TVector3 FhtAnalysis::GetInciPos(TVector3 pos, TVector3 dir, double R) {
 	dir.SetMag(1.);
-	dir.SetMag((TVector3(0, 0, 0) - pos) * dir);
+	dir.SetMag( - pos * dir);
 	LogDebug << "dir ori: (" << dir.X() << ", " << dir.Y() << ", " << dir.Z() << ")" << std::endl;
 	TVector3 tmp = pos + dir;
-	double dis = (TVector3(0, 0, 0) - tmp).Mag();
+	double dis = - tmp.Mag();
 	LogDebug << "dis: " << dis << std::endl;
 	if (R < dis) {
 		LogDebug << "The track didn't through CD" << std::endl;
@@ -372,3 +378,52 @@ TVector3 FhtAnalysis::GetInciPos(TVector3 pos, TVector3 dir, double R) {
 	dir.SetMag(dir.Mag() - halfstr);
 	return (pos + dir);
 }
+
+FourDCoor FhtAnalysis::GetInciPos(TVector3 pos, TVector3 dir, TVector3 fpmtpos, double R, double t) {
+	const double thr_1 = 5 * TMath::Pi() / 180; // need to be confirmed
+	const double thr_2 = 3 * TMath::Pi() / 180;
+	const double flat = 20000; // need to be confirmed
+	const double wallR = 1000;
+	FourDCoor Inci;
+	dir.SetMag(1.);
+	dir.SetMag( - pos * dir);
+	LogDebug << "dir ori: (" << dir.X() << ", " << dir.Y() << ", " << dir.Z() << ")" << std::endl;
+	TVector3 tmp = pos + dir;
+	double dis = - tmp.Mag();
+	LogDebug << "dis: " << dis << std::endl;
+	if (R < dis) {
+		LogDebug << "The track didn't through CD" << std::endl;
+		Inci.P = TVector3(0, 0, 0);
+		Inci.T = 0;
+		return Inci;
+	}
+	double halfstr = pow((pow(R, 2) - pow(dis, 2)), 0.5);
+	LogDebug << "halfstr: " << halfstr << std::endl;
+	dir.SetMag(dir.Mag() - halfstr);
+	Inci.P = pos + dir;
+	Inci.T = t;
+	if ((pos + dir).Theta() < thr_1) {
+		TVector3 tmpp;
+		double dis2flat = flat - (pos + dir).Z();
+		TVector3 PosOnSphere = pos + dir;
+		dir.SetMag(dis2flat * dir.Mag() / (dir * TVector3(0, 0, -1)));
+		tmpp = PosOnSphere - dir;
+		if (tmpp.Theta() < thr_2) {
+			Inci.P = PosOnSphere;
+			Inci.T = t - (tmpp - fpmtpos).Mag() * m_nLS / m_cLight + dir.Mag() / m_cLight;
+		}
+		else {
+			TVector2 dirXY = TVector2(dir.X(), dir.Y());
+			double dis2tmpp = dirXY.Mod();
+			TVector2 InciXY = TVector2(PosOnSphere.X(), PosOnSphere.Y());
+			dirXY = dirXY / dirXY.Mod();
+			double dis2edge = InciXY * dirXY;
+			dir.SetMag(dis2edge * dir.Mag() / dis2tmpp);
+			Inci.P = PosOnSphere;
+			Inci.T = t - (PosOnSphere - dir - fpmtpos).Mag() * m_nLS / m_cLight + dir.Mag() / m_cLight;
+		}
+	}
+	return Inci;
+}
+
+

@@ -1,6 +1,12 @@
 #include "RecCdMuonAlg/PmtProp.h"
 #include "RecCdMuonAlg/Params.h"
 #include"TVector3.h"
+
+struct FourDCoor {
+	TVector3 P;
+	double T;
+};
+
 double* firstHitTimeExpected(TVector3/*injecting point*/,
     double/*injecting time*/,
     TVector3/*track direction*/,

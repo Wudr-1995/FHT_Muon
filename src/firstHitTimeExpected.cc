@@ -15,7 +15,6 @@ firstHitTimeExpected(TVector3 ri,
 	double m_vmuon = params.get("MuonSpeed");
 	double m_nWater = params.get("WaterRefraction");
 
-	double D = 0;
 	//this theta is the angle between the first hit photon's track and the muon track.
 	double tantheta  = TMath::Sqrt(m_nLSlight*m_nLSlight-1);
 
@@ -23,7 +22,7 @@ firstHitTimeExpected(TVector3 ri,
 	TVector3 R_ipmt = pmt.pos;
 
 	//end point of the track
-	TVector3 Re = ri+direction*(length-D);
+	TVector3 Re = ri+direction*length;
 
 	// the perpendicular foot of the ipmt to the track.
 	TVector3 Rperp = ri+direction*(R_ipmt-ri)*direction;
@@ -37,17 +36,17 @@ firstHitTimeExpected(TVector3 ri,
 	double dtc = dtperp-(R_ipmt-Rperp).Mag()/(m_vmuon*tantheta);
 
 	//dte is the time muon fly from ri to Re; 
-	double dte = (length - D)/m_vmuon;
+	double dte = length/m_vmuon;
 
 	//if the dtc small than zero,  means the 'fastest light' point is out of the LS, 
 	//so the injection point is the fastest light point.
-	if((dtc * m_vmuon)<D){
-		Rc = ri+direction*D;
+	if(dtc < 0){
+		Rc = ri;
 		dtc = 0;
 	}
 	//if the dtc is greater than dte, meaning that the 'fastest light' point is after the Re, 
 	//so the end point is the fastest light point.
-	else if(dtc>dte){
+	else if(dtc > dte){
 		Rc = Re;
 		dtc = dte;
 	}
@@ -57,12 +56,13 @@ firstHitTimeExpected(TVector3 ri,
 	TVector3 LightTrk = Rc - R_ipmt;
 	LightTrk.SetMag(1.);
 	TVector3 tmp = - LightTrk * R_ipmt * LightTrk + R_ipmt;
+	if (tmp.Mag() > 17700) {
+		tmp.SetMag(17700);
+	}
 	TVector3 PosOnArc = ((tmp - R_ipmt).Mag() - TMath::Sqrt(17700 * 17700 - TMath::Power(tmp.Mag(), 2))) * LightTrk + R_ipmt;
 	TVector3 R = PosOnArc;
 	R.SetMag(1.);
-	TVector3 lightdir = PosOnArc - Rc;
-	lightdir.SetMag(1.);
-	double sinin = TMath::Sqrt(1 - TMath::Power(R * lightdir, 2));
+	double sinin = TMath::Sqrt(1 - TMath::Power(R * (- LightTrk), 2));
 	double sinout = sinin * m_nLSlight / m_nWater;
 	double Wlength = TMath::Sqrt(TMath::Power(R_ipmt.Mag(), 2) - TMath::Power(sinout * 17700, 2)) - 17700 * TMath::Sqrt(1 - TMath::Power(sinout, 2));
 	// double t_ipmt = ti + dtc + m_nLSlight/m_clight*(R_ipmt-Rc).Mag();

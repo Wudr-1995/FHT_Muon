@@ -31,6 +31,7 @@ class FhtAnalysis : public AlgBase{
 		bool finalize();
 		double* PredictFht(PmtProp& pos);
 		double GetDisPMT2Trk(PmtProp&);
+		FourDCoor GetInciPos(TVector3, TVector3, TVector3, double, double);
 		TVector3 GetInciPos(TVector3, TVector3, double);
 	private :
 		int m_iEvt;
